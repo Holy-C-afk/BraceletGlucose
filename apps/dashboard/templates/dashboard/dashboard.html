@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Barcel Glucose{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <h1>Welcome, {{ user.first_name }}</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" id="addReadingBtn">
+                <i class="fas fa-plus"></i> Add Reading
+            </button>
+            <button class="btn btn-outline-primary" id="settingsBtn">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-tint"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Latest Glucose</h3>
+                <p class="stat-value">{{ latest_glucose.reading }} mg/dL</p>
+                <p class="stat-time">{{ latest_glucose.timestamp|timesince }} ago</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-syringe"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Today's Insulin</h3>
+                <p class="stat-value">{{ today_insulin }} units</p>
+                <p class="stat-time">Last 24 hours</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Average Glucose</h3>
+                <p class="stat-value">{{ avg_glucose|floatformat:1 }} mg/dL</p>
+                <p class="stat-time">Last 7 days</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-content">
+        <!-- Glucose Chart -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2>Glucose Trends</h2>
+                <div class="chart-controls">
+                    <select id="timeRange">
+                        <option value="7">Last 7 Days</option>
+                        <option value="14">Last 14 Days</option>
+                        <option value="30">Last 30 Days</option>
+                    </select>
+                </div>
+            </div>
+            <canvas id="glucoseChart"></canvas>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="activity-container">
+            <h2>Recent Activity</h2>
+            <div class="activity-list">
+                {% for activity in recent_activities %}
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="fas fa-{{ activity.icon }}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h4>{{ activity.title }}</h4>
+                        <p>{{ activity.description }}</p>
+                        <span class="activity-time">{{ activity.timestamp|timesince }} ago</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="no-data">No recent activity</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dashboard Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="settingsForm">
+                    <div class="mb-3">
+                        <label class="form-label">Default Time Range</label>
+                        <select class="form-select" name="default_time_range">
+                            <option value="7">7 Days</option>
+                            <option value="14">14 Days</option>
+                            <option value="30">30 Days</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Glucose Unit</label>
+                        <select class="form-select" name="glucose_unit">
+                            <option value="mg/dL">mg/dL</option>
+                            <option value="mmol/L">mmol/L</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chart Type</label>
+                        <select class="form-select" name="chart_type">
+                            <option value="line">Line Chart</option>
+                            <option value="scatter">Scatter Plot</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveSettings">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %} 
