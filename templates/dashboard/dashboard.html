@@ -1,181 +1,51 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% load static %}
 
-{% block title %}Dashboard - Diabetes Bracelet{% endblock %}
-
-{% block extra_css %}
-<link href="{% static 'css/dashboard.css' %}" rel="stylesheet">
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 {% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="dashboard">
-    <!-- Header -->
-    <header class="dashboard-header">
-        <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
-        <div class="header-actions">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#settingsModal">
-                <i class="fas fa-cog"></i> Settings
-            </button>
-        </div>
-    </header>
+<h1>Welcome to Your Dashboard</h1>
 
-    <!-- Quick Stats -->
-    <section class="quick-stats">
-        <div class="stat-card">
-            <i class="fas fa-tint"></i>
-            <div class="stat-info">
-                <h3>Latest Glucose</h3>
-                <p class="stat-value">{{ glucose_readings.last.glucose_level|default:"--" }} mg/dL</p>
-                <p class="stat-time">{{ glucose_readings.last.timestamp|default:"No readings" }}</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <i class="fas fa-syringe"></i>
-            <div class="stat-info">
-                <h3>Last Insulin</h3>
-                <p class="stat-value">{{ insulin_doses.last.dose_amount|default:"--" }} units</p>
-                <p class="stat-time">{{ insulin_doses.last.timestamp|default:"No doses" }}</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <i class="fas fa-running"></i>
-            <div class="stat-info">
-                <h3>Today's Activity</h3>
-                <p class="stat-value">{{ activity_logs.count }} activities</p>
-                <p class="stat-time">Last: {{ activity_logs.last.start_time|default:"No activities" }}</p>
-            </div>
-        </div>
-    </section>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Glucose Chart -->
-        <section class="chart-container">
-            <div class="chart-header">
-                <h2>Glucose Trends</h2>
-                <div class="chart-controls">
-                    <select class="form-select" id="timeRange">
-                        <option value="7">Last 7 Days</option>
-                        <option value="14">Last 14 Days</option>
-                        <option value="30">Last 30 Days</option>
-                    </select>
-                </div>
-            </div>
-            <canvas id="glucoseChart"></canvas>
-        </section>
+<section>
+    <h2>Glucose Readings</h2>
+    {% if glucose_readings %}
+        <ul>
+            {% for reading in glucose_readings %}
+                <li>{{ reading.timestamp }}: {{ reading.value }} mg/dL</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No glucose readings available.</p>
+    {% endif %}
+</section>
 
-        <!-- Activity Section -->
-        <section class="activity-container">
-            <h2>Recent Activity</h2>
-            <div class="activity-list">
-                {% for activity in activity_logs %}
-                <div class="activity-item">
-                    <div class="activity-icon">
-                        <i class="fas fa-{{ activity.activity_type|lower }}"></i>
-                    </div>
-                    <div class="activity-details">
-                        <h4>{{ activity.get_activity_type_display }}</h4>
-                        <p>{{ activity.duration }} - {{ activity.calories_burned }} calories</p>
-                        <small>{{ activity.start_time }}</small>
-                    </div>
-                </div>
-                {% empty %}
-                <p class="text-muted">No recent activities</p>
-                {% endfor %}
-            </div>
-        </section>
-    </div>
-</div>
+<section>
+    <h2>Insulin Doses</h2>
+    {% if insulin_doses %}
+        <ul>
+            {% for dose in insulin_doses %}
+                <li>{{ dose.timestamp }}: {{ dose.units }} units</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No insulin doses recorded.</p>
+    {% endif %}
+</section>
 
-<!-- Settings Modal -->
-<div class="modal fade" id="settingsModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Dashboard Settings</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="settingsForm">
-                    <div class="mb-3">
-                        <label class="form-label">Default Time Range</label>
-                        <select class="form-select" name="default_time_range">
-                            <option value="7" {% if settings.default_time_range == 7 %}selected{% endif %}>7 Days</option>
-                            <option value="14" {% if settings.default_time_range == 14 %}selected{% endif %}>14 Days</option>
-                            <option value="30" {% if settings.default_time_range == 30 %}selected{% endif %}>30 Days</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Glucose Range</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" name="glucose_min" value="{{ settings.glucose_min }}" placeholder="Min">
-                            <span class="input-group-text">-</span>
-                            <input type="number" class="form-control" name="glucose_max" value="{{ settings.glucose_max }}" placeholder="Max">
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveSettings">Save changes</button>
-            </div>
-        </div>
-    </div>
-</div>
+<section>
+    <h2>Activity Logs</h2>
+    {% if activity_logs %}
+        <ul>
+            {% for log in activity_logs %}
+                <li>{{ log.start_time }}: {{ log.activity_type }} for {{ log.duration }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No activity logs available.</p>
+    {% endif %}
+</section>
 {% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize glucose chart
-    const ctx = document.getElementById('glucoseChart').getContext('2d');
-    const glucoseData = {
-        labels: [{% for reading in glucose_readings %}'{{ reading.timestamp|date:"M d" }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-        datasets: [{
-            label: 'Glucose Level (mg/dL)',
-            data: [{% for reading in glucose_readings %}{{ reading.glucose_level }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1
-        }]
-    };
-
-    const glucoseChart = new Chart(ctx, {
-        type: 'line',
-        data: glucoseData,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: false
-                }
-            }
-        }
-    });
-
-    // Handle settings form submission
-    document.getElementById('saveSettings').addEventListener('click', function() {
-        const form = document.getElementById('settingsForm');
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-
-        fetch('{% url "update_settings" %}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                location.reload();
-            } else {
-                alert('Error saving settings');
-            }
-        });
-    });
-});
-</script>
-{% endblock %} 
